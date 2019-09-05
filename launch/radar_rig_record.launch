@@ -1,0 +1,19 @@
+<launch>
+    <arg name="name" doc="specify the name of the bag file to be saved" />
+
+<node pkg="rosbag" type="record" name="record_sensors"
+  args="record -O /home/ohrad/Data/subT/radar-rig/capitalmine_2019-07-19/$(arg name)
+  /tf
+  /tf_static
+  /radar_fwd/mmWaveDataHdl/RScan
+  /radar_lat/mmWaveDataHdl/RScan
+  /radar_right/mmWaveDataHdl/RScan
+  /radar_left/mmWaveDataHdl/RScan
+  /mmWaveDataHdl/RScan
+  /scan
+  /imu/data_raw
+  /imu/data
+  /camera/color/image_raw
+  /camera/depth/image_rect_raw
+  /jackal_velocity_controller/odom"/>
+</launch>

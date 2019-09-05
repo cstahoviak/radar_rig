@@ -1,0 +1,84 @@
+<!--
+  Multiradar (1642) full sensorsuite launch file
+
+  Launshes:
+    - 2x 1642 radar
+    - 1x Hokuyo URG LiDAR
+    - 1x LORD microstrain IMU
+    - 1x Intel Realsense d435
+ -->
+
+<launch>
+
+  <arg name="rviz" default="false"/>
+  <arg name="radar" default="true"/>
+  <arg name="lidar" default="true"/>
+  <arg name="camera" default="false"/>
+  <arg name="imu" default="true"/>
+
+  <arg name="radar_name_0" default="radar_fwd" doc="forward facing radar"/>
+  <arg name="radar_name_1" default="radar_lat" doc="lateral facing radar"/>
+  <arg name="realsense_name_0" default="camera" doc="forward facing realsense"/>
+
+  <include if="$(arg radar)" file="$(find ti_mmwave_rospkg)/launch/multiradar.launch">
+    <!-- set arg values for radar0 -->
+    <arg name="radar_name_0" value="$(arg radar_name_0)"/>
+    <arg name="radar_device_0" value="1642"/>
+    <arg name="config_0" value="rangeRes_0-04_velRes_0-09_pkgrp_doppler"/>
+    <arg name="sdk_0" value="02_01_00_04" doc="{AWR1642} [02_01_00_04], {IWR1642, AWR1443, IWR1443} [01_02_00_05]"/>
+    <arg name="command_port_0" value="/dev/ttyACM0"/>
+    <arg name="data_port_0" value="/dev/ttyACM1"/>
+
+    <!-- set arg values for radar1 -->
+    <arg name="radar_name_1" value="$(arg radar_name_1)"/>
+    <arg name="radar_device_1" value="1642"/>
+    <arg name="config_1" value="rangeRes_0-04_velRes_0-09_pkgrp_doppler"/>
+    <arg name="sdk_1" value="02_01_00_04" doc="{AWR1642} [02_01_00_04], {IWR1642, AWR1443, IWR1443} [01_02_00_05]"/>
+    <arg name="command_port_1" value="/dev/ttyACM2"/>
+    <arg name="data_port_1" value="/dev/ttyACM3"/>
+
+    <!-- set arg values for radar0 velocity estimator -->
+    <arg name="angle_thres_0" value="40"/>
+    <arg name="range_thres_0" value="0.30"/>
+    <arg name="intensity_thres_0" value="20"/>
+
+    <!-- set arg values for radar1 velocity estimator -->
+    <arg name="angle_thres_1" value="40"/>
+    <arg name="range_thres_1" value="0.25"/>
+    <arg name="intensity_thres_1" value="20"/>
+  </include>
+
+  <!-- launch Hokuyo URG lidar node -->
+  <include if="$(arg lidar)" file="$(find urg_node)/launch/urg_lidar.launch">
+    <arg name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
+  </include>
+
+  <!-- launch realsense camera node -->
+  <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="enable_pointcloud" value="true"/>
+  </include>
+
+  <!-- launch LORD Microstrain GX5-15 IMU -->
+  <include if="$(arg imu)" file="$(find microstrain_driver)/launch/3dm_gx5_15.launch">
+    <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
+    <!-- remap from="imu_raw" to="imu/data_raw"-->
+  </include>
+
+  <!-- launch Madgwick filter to get heading from IMU -->
+  <node if="$(arg imu)" pkg="imu_filter_madgwick" name="madgwick" type="imu_filter_node" clear_params="true">
+    <rosparam command="load" file="$(find microstrain_driver)/params/imu_filter_madgwick.yaml"/>
+  </node>
+
+  <!-- launch Rig 2 static transforms -->
+  <include file="$(find static_tfs)/launch/rig2_transforms.launch">
+    <arg name="radar" value="$(arg radar)"/>
+    <arg name="lidar" value="$(arg lidar)"/>
+    <arg name="camera" value="$(arg camera)"/>
+    <arg name="imu" value="$(arg imu)"/>
+  </include>
+
+<!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find rviz_config)/subT_sensorsuite_multiradar.rviz"/>
+
+
+</launch>

@@ -1,0 +1,41 @@
+<!--
+This will launch all the sensors as well as the vrpn to connect to optitrack
+ -->
+
+<launch>
+  <!-- set default values for input args -->
+  <arg name="radar" default="true"/>
+  <arg name="radar_device" default="1642" />
+  <arg name="config" default="best_range_res"/>
+  <arg name="lidar" default="true"/>
+  <arg name="camera" default="true"/>
+
+  <!-- launch vrpn to get real pose from opti tracker -->
+  <inlcude file="$(find vrpn_client_ros)/launch/sample.launch">
+    <arg name="server" value="tracker" />
+  </include>
+
+  <!-- launch TI mmWave sensor node -->
+  <include if="$(arg radar)" file="$(find ti_mmwave_rospkg)/launch/ti_mmwave_sensor.launch">
+    <arg name="device" value="$(arg radar_device)" doc="TI mmWave sensor device type [1443, 1642]"/>
+    <arg name="config" value="$(arg config)"/>
+    <arg name="max_allowed_elevation_angle_deg" value="90" doc="Maximum allowed elevation angle in degrees for detected object data [0 > value >= 90]}"/>
+    <arg name="max_allowed_azimuth_angle_deg" value="90" doc="Maximum allowed azimuth angle in degrees for detected object data [0 > value >= 90]}"/>
+  </include>
+
+  <!-- launch Hokuyo URG lidar node -->
+  <include if="$(arg lidar)" file="$(find urg_node)/launch/urg_lidar.launch"/>
+  <param name="/urg_node/serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
+
+  <!-- launch realsense camera node -->
+  <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="enable_pointcloud" value="true"/>
+  </include>
+
+  <include file="$(find static_tfs)/launch/opti_track_transforms.launch">
+    <arg name="radar" value="$(arg radar)"/>
+    <arg name="lidar" value="$(arg lidar)"/>
+    <arg name="camera" value="$(arg camera)"/>
+  </include>
+
+</launch>

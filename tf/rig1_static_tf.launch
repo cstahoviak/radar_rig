@@ -1,0 +1,13 @@
+<launch>
+  <arg name="radar" default="true"/>
+  <arg name="lidar" default="true"/>
+  <arg name="camera" default="true"/>
+
+  <node if="$(arg radar)" pkg="tf" type="static_transform_publisher" name="radar_base_tf" args="0.064 0 -0.027 0 0 0 base_link base_radar_link 10"/>
+  <node if="$(arg lidar)" pkg="tf" type="static_transform_publisher" name="laser_base_tf" args="0 0 0.055 0 0 0 base_link laser 10" />
+  <node if="$(arg camera)" pkg="tf" type="static_transform_publisher" name="camera_base_tf" args="0.070 0 0.015 0 0 0 base_link camera_link 10"/>
+
+  <node if="$(arg radar)" pkg="tf" type="static_transform_publisher" name="base_link_2_vicon" args="0 0 0 0 0 0 radarsensors base_link 10"/>
+
+<!-- <node pkg="tf" type="static_transform_publisher" name="base_map_tf" args="0 0 0 0 0 0 map base_link 10"/> -->
+</launch>
