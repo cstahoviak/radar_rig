@@ -4,12 +4,11 @@
   <arg name="camera" default="false"/>
   <arg name="imu" default="true"/>
 
-  <arg name="radar_name_0" default="radar_fwd" doc="forward facing radar"/>
-  <arg name="radar_name_1" default="radar_lat" doc="lateral facing radar"/>
+  <arg name="radar_name_0" default="radar0" doc="forward facing radar"/>
+  <arg name="radar_name_1" default="radar1" doc="lateral facing radar"/>
   <arg name="realsense_name_0" default="camera" doc="forward facing realsense"/>
 
   <!-- transform for forward facing radar0 to base_link -->
-
   <node if="$(arg radar)" pkg="tf" type="static_transform_publisher" name="$(arg radar_name_0)_base_tf" args="0.068 0 -0.035 0 0 0 base_link $(arg radar_name_0)_link 10"/>
   <node if="$(arg radar)" pkg="tf" type="static_transform_publisher" name="radar_base_tf" args="0.068 0 -0.035 0 0 0 base_link base_radar_link 10"/>
 

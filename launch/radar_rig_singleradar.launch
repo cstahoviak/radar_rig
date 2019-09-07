@@ -17,8 +17,6 @@
   <arg name="imu" default="true"/>
   <arg name="rviz" default="true"/>
 
-  <arg name="radar_name_0" default="radar_fwd" doc="forward facing radar"/>
-  <arg name="radar_name_1" default="radar_lat" doc="lateral facing radar"/>
   <arg name="realsense_name_0" default="camera" doc="forward facing realsense"/>
 
   <arg name="vicon_server" default="tracker"/>
@@ -68,8 +66,6 @@
     <arg name="lidar" value="$(arg lidar)"/>
     <arg name="camera" value="$(arg camera)"/>
     <arg name="imu" value="$(arg imu)"/>
-    <arg name="radar_name_0" value="$(arg radar_name_0)"/>
-    <arg name="radar_name_1" value="$(arg radar_name_1)"/>
   </include>
 
 <!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->
