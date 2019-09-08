@@ -52,7 +52,6 @@
   <!-- launch LORD Microstrain GX5-15 IMU -->
   <include if="$(arg imu)" file="$(find microstrain_driver)/launch/3dm_gx5_15.launch">
     <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
-    <!-- remap from="imu_raw" to="imu/data_raw"-->
   </include>
 
   <!-- launch Madgwick filter to get heading from IMU -->
