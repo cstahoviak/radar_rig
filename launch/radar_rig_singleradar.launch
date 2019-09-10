@@ -22,6 +22,9 @@
   <arg name="vicon_server" default="tracker"/>
   <arg name="tracker_names" default="radar_rig"/>
 
+  <!-- Topic re-mapping -->
+  <remap from="imu_raw" to="imu/data_raw"/>
+
   <!-- launch Vicon system -->
   <include if="$(arg vicon)" file="$(find vrpn_client_ros)/launch/vicon.launch"/>
 

@@ -11,13 +11,19 @@
 
   <arg name="goggles" default="true"/>
   <arg name="imu" default="true"/>
-  <arg name="camera" default="false"/>
+  <arg name="camera" default="true"/>
   <arg name="rviz" default="false"/>
+
+  <!-- Topic re-mapping -->
+  <remap from="imu_raw" to="imu/data_raw"/>
+  <!-- <remap from="camera/accel/sample" to="camera/accel/data"/>
+  <remap from="camera/gyro/sample" to="camera/gyro/data"/>
+  <remap from="camera/odom/sample" to="camera/odom/data"/> -->
 
   <!-- launch the TI 1843 radar + Goggles velocity estimator node -->
   <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
-    <arg name="command_port" default="/dev/ttyACM2"/>
-    <arg name="data_port" default="/dev/ttyACM3"/>
+    <arg name="command_port" default="/dev/ttyACM0"/>
+    <arg name="data_port" default="/dev/ttyACM1"/>
   </include>
 
   <!-- launch LORD Microstrain GX5-15 IMU -->
@@ -25,12 +31,17 @@
     <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
   </include>
 
-  <!-- launch realsense camera node -->
-  <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_camera.launch">
-    <arg name="enable_color" value="false"/>
-    <arg name="enable_gyro" value="false"/>
-    <arg name="enable_accel" value="false"/>
-    <arg name="enable_sync" value="true"/>
+  <!-- launch RealSense T265 camera node -->
+  <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_t265.launch">
+    <!-- <arg name="enable_sync" value="true"/> -->
+  </include>
+
+  <!-- launch Rig 2 static transforms -->
+  <include file="$(find radar_rig)/tf/rig3_static_tf_90.launch">
+    <arg name="radar" value="$(arg goggles)"/>
+    <arg name="lidar" value="false"/>
+    <arg name="camera" value="$(arg camera)"/>
+    <arg name="imu" value="$(arg imu)"/>
   </include>
 
 <!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->

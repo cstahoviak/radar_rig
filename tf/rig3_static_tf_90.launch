@@ -1,0 +1,25 @@
+<launch>
+  <arg name="radar" default="false"/>
+  <arg name="lidar" default="false"/>
+  <arg name="camera" default="false"/>
+  <arg name="imu" default="false"/>
+
+  <arg name="radar_name_0" default="radar0" doc="forward facing radar"/>
+  <arg name="radar_name_1" default="radar1" doc="lateral facing radar"/>
+  <arg name="realsense_name_0" default="camera" doc="forward facing realsense"/>
+
+  <!-- transform for forward facing radar0 to base_link -->
+  <node if="$(arg radar)" pkg="tf2_ros" type="static_transform_publisher" name="radar_base_tf" args="-0.005 0 -0.035 0 0 0 base_link base_radar_link"/>
+
+  <!-- transform for lidar frame to base_link -->
+  <node if="$(arg lidar)" pkg="tf2_ros" type="static_transform_publisher" name="laser_base_tf" args="-0.105 0 0.035 0 0 0 base_link laser" />
+
+  <!-- transform for camera frame to base_link -->
+  <node if="$(arg camera)" pkg="tf2_ros" type="static_transform_publisher" name="camera_base_tf" args="0 0 0 0 0 0 camera_link base_link"/>
+
+<!-- transform for imu frame to base_link -->
+  <node if="$(arg imu)" pkg="tf2_ros" type="static_transform_publisher" name="imu_base_tf" args="-0.060 0 -0.010 0 0 0  base_link 3dm_gx5_15"/>
+
+<!-- <node pkg="tf2_ros" type="static_transform_publisher" name="base_map_tf" args="0 0 0 0 0 0 map base_link"/> -->
+
+</launch>
