@@ -4,12 +4,11 @@
   Launshes:
     - 1x 1843 radar board
     - 1x LORD microstrain IMU
-    - 1x Intel RealSense d435 (or the t265)
+    - 1x Intel RealSense T265
  -->
 
 <launch>
 
-  <arg name="vrpn"    default="false"/>
   <arg name="goggles" default="true"/>
   <arg name="imu"     default="true"/>
   <arg name="camera"  default="true"/>
@@ -21,17 +20,14 @@
   <remap from="camera/gyro/sample" to="camera/gyro/data"/>
   <remap from="camera/odom/sample" to="camera/odom/data"/> -->
 
-  <include if="$(arg vrpn)" file="$(find radar_rig)/tf/vrpn_tf.py"/>
-
   <!-- launch the TI 1843 radar + Goggles velocity estimator node -->
   <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
-    <arg name="command_port" default="/dev/ttyACM0"/>
-    <arg name="data_port" default="/dev/ttyACM1"/>
+    <arg name="command_port" default="/dev/ttyACM1"/>
+    <arg name="data_port" default="/dev/ttyACM2"/>
   </include>
 
   <!-- launch LORD Microstrain GX5-15 IMU -->
   <include if="$(arg imu)" file="$(find microstrain_driver)/launch/3dm_gx5_15.launch">
-    <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
   </include>
 
   <!-- launch RealSense T265 camera node -->
