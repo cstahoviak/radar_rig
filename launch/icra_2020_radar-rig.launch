@@ -22,8 +22,8 @@
 
   <!-- launch the TI 1843 radar + Goggles velocity estimator node -->
   <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
-    <arg name="command_port" default="/dev/ttyACM0"/>
-    <arg name="data_port" default="/dev/ttyACM1"/>
+    <arg name="command_port" default="/dev/ttyACM2"/>
+    <arg name="data_port" default="/dev/ttyACM3"/>
   </include>
 
   <!-- launch LORD Microstrain GX5-15 IMU -->
