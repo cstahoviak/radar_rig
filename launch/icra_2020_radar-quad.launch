@@ -9,6 +9,7 @@
 
 <launch>
 
+  <arg name="vicon"   default="false"
   <arg name="goggles" default="true"/>
   <arg name="imu"     default="true"/>
   <arg name="camera"  default="true"/>
@@ -19,6 +20,8 @@
   <!-- <remap from="camera/accel/sample" to="camera/accel/data"/>
   <remap from="camera/gyro/sample" to="camera/gyro/data"/>
   <remap from="camera/odom/sample" to="camera/odom/data"/> -->
+
+  <include if="$(arg vicon)" file="$(find radar_rg)/vrpn/vrpn_A01Radar.launch" />
 
   <!-- launch the TI 1843 radar + Goggles velocity estimator node -->
   <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
