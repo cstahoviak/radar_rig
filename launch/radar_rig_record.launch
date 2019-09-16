@@ -2,9 +2,10 @@
     <arg name="name" doc="specify the name of the bag file to be saved" />
 
 <node pkg="rosbag" type="record" name="record_sensors"
-  args="record -O /home/ohrad/Data/radar-quad/uas_flight_space/2019-09-13/$(arg name)
+  args="record -O /home/carl/Data/icra_2020/radar-rig/uas_flight_space/2019-09-14/$(arg name)
   /tf
   /tf_static
+  /scan
   /mmWaveDataHdl/RScan
   /imu/data_raw
   /camera/accel/sample
@@ -12,6 +13,6 @@
   /camera/odom/sample
   /camera/fisheye1/image_raw
   /camera/fisheye2/image_raw
-  /vrpn_client_node/A01Radar/pose
-  /vrpn_client_node/A01Radar/twist"/>
+  /vrpn_client_node/RadarRig/pose
+  /vrpn_client_node/RadarRig/twist"/>
 </launch>

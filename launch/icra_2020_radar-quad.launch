@@ -9,7 +9,7 @@
 
 <launch>
 
-  <arg name="vicon"   default="false"
+  <arg name="vicon"   default="false"/>
   <arg name="goggles" default="true"/>
   <arg name="imu"     default="true"/>
   <arg name="camera"  default="true"/>

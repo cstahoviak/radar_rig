@@ -9,10 +9,12 @@
 
 <launch>
 
+  <arg name="vicon"   default="true"/>
   <arg name="goggles" default="true"/>
-  <arg name="imu" default="true"/>
-  <arg name="camera" default="true"/>
-  <arg name="rviz" default="false"/>
+  <arg name="imu"     default="true"/>
+  <arg name="camera"  default="true"/>
+  <arg name="lidar"   default="true"/>
+  <arg name="rviz"    default="false"/>
 
   <!-- Topic re-mapping -->
   <remap from="imu_raw" to="imu/data_raw"/>
@@ -20,10 +22,12 @@
   <remap from="camera/gyro/sample" to="camera/gyro/data"/>
   <remap from="camera/odom/sample" to="camera/odom/data"/> -->
 
+  <include if="$(arg vicon)" file="$(find radar_rig)/vrpn/vrpn_RadarRig.launch" />
+
   <!-- launch the TI 1843 radar + Goggles velocity estimator node -->
   <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
-    <arg name="command_port" default="/dev/ttyACM2"/>
-    <arg name="data_port" default="/dev/ttyACM3"/>
+    <arg name="command_port" default="/dev/ttyACM0"/>
+    <arg name="data_port" default="/dev/ttyACM1"/>
   </include>
 
   <!-- launch LORD Microstrain GX5-15 IMU -->
@@ -34,6 +38,11 @@
   <!-- launch RealSense T265 camera node -->
   <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_t265.launch">
     <!-- <arg name="enable_sync" value="true"/> -->
+  </include>
+
+  <!-- launch Hokuyo URG lidar node -->
+  <include if="$(arg lidar)" file="$(find urg_node)/launch/urg_lidar.launch">
+    <arg name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
   </include>
 
   <!-- launch Rig 2 static transforms -->
