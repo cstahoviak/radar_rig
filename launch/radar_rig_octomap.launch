@@ -6,6 +6,8 @@
 
   <arg name="goggles" default="true"/>
   <arg name="camera"  default="true"/>
+  <arg name="lidar"   default="true"/>
+  <arg name="imu"     default="true"/>
   <arg name="rviz"    default="true"/>
 
   <!-- Goggles parameters -->
@@ -22,6 +24,16 @@
   <!-- launch RealSense T265 camera node -->
   <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_t265.launch">
     <!-- <arg name="enable_sync" value="true"/> -->
+  </include>
+
+  <!-- launch Hokuyo URG lidar node -->
+  <include if="$(arg lidar)" file="$(find urg_node)/launch/urg_lidar.launch">
+    <arg name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
+  </include>
+
+  <!-- launch LORD Microstrain GX5-15 IMU -->
+  <include if="$(arg imu)" file="$(find microstrain_driver)/launch/3dm_gx5_15.launch">
+    <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
   </include>
 
   <!-- launch Octomap via radar_mapping.launch -->
