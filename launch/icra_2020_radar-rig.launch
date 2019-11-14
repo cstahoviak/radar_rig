@@ -45,7 +45,7 @@
     <arg name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
   </include>
 
-  <!-- launch Rig 2 static transforms -->
+  <!-- launch Rig 3 static transforms -->
   <include file="$(find radar_rig)/tf/rig3_static_tf_90.launch">
     <arg name="radar" value="$(arg goggles)"/>
     <arg name="lidar" value="false"/>

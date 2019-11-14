@@ -45,6 +45,7 @@ def odom_msg_cb(msg):
     tf.header.stamp = msg.header.stamp
     tf.header.frame_id = rospy.get_param('~frame_id')
     tf.child_frame_id = rospy.get_param('~child_frame_id')
+    # tf.child_frame_id = msg.header.frame_id
 
     tf.transform.translation.x = msg.pose.pose.position.x
     tf.transform.translation.y = msg.pose.pose.position.y
@@ -61,7 +62,7 @@ def main():
     rospy.init_node('world2odom_tf')
     pose_topic = rospy.get_param('~pose_topic')
 
-    if pose_topic == "/camera/odom/sample":
+    if pose_topic == "camera/odom/sample":
         pose_sub = rospy.Subscriber(pose_topic, Odometry, odom_msg_cb)
     else:
         pose_sub = rospy.Subscriber(pose_topic, PoseStamped, pose_msg_cb)
