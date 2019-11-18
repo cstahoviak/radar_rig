@@ -14,7 +14,14 @@
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_raw" output="screen">
     <remap from="octomap_point_cloud_centers" to="raw_point_cloud_centers"/>
     <remap from="projected_map" to="raw_map"/>
-    <remap from="cloud_in" to="xyzi_filt_out"/>
+    <remap from="cloud_in" to="rzi_filt_out"/>
+
+    <param name="resolution" value="0.05"/>
+    <param name="frame_id" value="map"/>
+    <param name="base_frame_id" value="camera_odom_frame"/>
+    <param name="sensor_model/hit" value="0.7"/>
+    <param name="sensor_model/miss" value="0.4"/>
+    <param name="ground_filter/distance" value="1.0"/>
   </node>
 
   <!-- Perform SOR filtering on output from "raw" octomap node -->
@@ -25,11 +32,26 @@
     <param name="stddev" value="0.04"/>
   </node>
 
+  <!-- Perform SOR filtering on output from "raw" octomap node -->
+  <!-- node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
+    <remap from="~input" to="xyzi_filt_out"/>
+    <remap from="~output" to="mapping_SOR_filter_out"/>
+    <param name="mean_k" value="20"/>
+    <param name="stddev" value="0.04"/>
+  </node -->
+
   <!-- Create "filtered" 3D map using second octomap node -->
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered" output="screen">
     <remap from="octomap_point_cloud_centers" to="filtered_point_cloud_centers"/>
     <remap from="projected_map" to="filtered_map"/>
     <remap from="cloud_in" to="mapping_SOR_filter_out"/>
+
+    <param name="resolution" value="0.05"/>
+    <param name="frame_id" value="map"/>
+    <param name="base_frame_id" value="camera_odom_frame"/>
+    <param name="sensor_model/hit" value="0.7"/>
+    <param name="sensor_model/miss" value="0.4"/>
+    <param name="ground_filter/distance" value="1.0"/>
   </node>
 
 </launch>
