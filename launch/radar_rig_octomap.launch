@@ -4,53 +4,72 @@
 
 <launch>
 
+  <arg name="offline" default="false" doc="mapping from an offline (rosbag) dataset or online (live) data?"/>
+
   <arg name="goggles" default="true"/>
   <arg name="camera"  default="true"/>
   <arg name="lidar"   default="true"/>
   <arg name="imu"     default="true"/>
   <arg name="rviz"    default="true"/>
 
+  <!-- Topic re-mapping -->
+  <remap from="imu_raw" to="imu/data_raw"/>
+
   <!-- Goggles parameters -->
   <arg name="launch_radar" default="true" doc="launch radar in addition to velocity estimator?"/>
   <arg name="publish_inliers" default="true" doc="publish MLESAC inlier pointcloud?"/>
 
-  <!-- launch Goggles node -->
-  <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
-    <arg name="launch_radar" value="$(arg launch_radar)"/>
-    <arg name="publish_inliers" value="$(arg publish_inliers)"/>
-    <arg name="config" value="rngRes_0-04_velRes_0-15_rngMax_10-04_3d_10Hz"/>
-  </include>
+  <!-- For "online" mapping (not from a rosbag) -->
+  <group unless="$(arg offline)">
+    <!-- launch Goggles node -->
+    <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
+      <arg name="launch_radar" value="$(arg launch_radar)"/>
+      <arg name="publish_inliers" value="$(arg publish_inliers)"/>
+      <arg name="config" value="rngRes_0-04_velRes_0-15_rngMax_10-04_3d_10Hz"/>
+    </include>
 
-  <!-- launch RealSense T265 camera node -->
-  <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_t265.launch">
-    <!-- <arg name="enable_sync" value="true"/> -->
-  </include>
+    <!-- launch RealSense T265 camera node -->
+    <include if="$(arg camera)" file="$(find realsense2_camera)/launch/rs_t265.launch">
+      <!-- <arg name="enable_sync" value="true"/> -->
+    </include>
 
-  <!-- launch Hokuyo URG lidar node -->
-  <include if="$(arg lidar)" file="$(find urg_node)/launch/urg_lidar.launch">
-    <arg name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
-  </include>
+    <!-- launch Hokuyo URG lidar node -->
+    <include if="$(arg lidar)" file="$(find urg_node)/launch/urg_lidar.launch">
+      <arg name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00"/>
+    </include>
 
-  <!-- launch LORD Microstrain GX5-15 IMU -->
-  <include if="$(arg imu)" file="$(find microstrain_driver)/launch/3dm_gx5_15.launch">
-    <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
-  </include>
+    <!-- launch LORD Microstrain GX5-15 IMU -->
+    <include if="$(arg imu)" file="$(find microstrain_driver)/launch/3dm_gx5_15.launch">
+      <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
+    </include>
 
-  <!-- launch Octomap via radar_mapping.launch -->
-  <include file="$(find radar_rig)/launch/radar_mapping.launch"/>
+    <!-- launch Octomap via radar_mapping.launch -->
+    <include file="$(find radar_rig)/launch/radar_mapping.launch"/>
 
-  <!-- static transfrom from camera_odom_frame and base_radar_link -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="odom_camera_tf" args="0 0 0 0 0 0 odom camera_odom_frame"/>
-  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_radar_tf" args="0 0 -0.040 0 0 0 camera_odom_frame base_radar_link"/>
+    <!-- static transfrom from camera_pose_frame to additional sensor frames -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_camera_tf" args="0 0 0 0 0 0 odom camera_odom_frame"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_radar_tf" args="0 0 -0.040 0 0 0 camera_pose_frame base_radar_link"/>
+    <node if="$(arg lidar)" pkg="tf2_ros" type="static_transform_publisher" name="camera_lidar_tf" args="0 0 0.040 0 0 0 camera_pose_frame laser_link"/>
+    <node if="$(arg imu)" pkg="tf2_ros" type="static_transform_publisher" name="camera_imu_tf" args="0 0 -0.040 0 0 0 camera_pose_frame 3dm_gx5_15"/>
 
-  <!-- launch world2odom transform node -->
-  <node pkg="radar_rig" type="world2odom_tf.py" name="vrpn_pose_tf" output="screen">
-    <param name="pose_topic" value="camera/odom/sample"/>
-    <param name="frame_id" value="map"/>
-    <param name="child_frame_id" value="camera_odom_frame"/>
-  </node>
+    <!-- launch world2odom transform node -->
+    <node pkg="radar_rig" type="world2odom_tf.py" name="vrpn_pose_tf" output="screen">
+      <param name="pose_topic" value="camera/odom/sample"/>
+      <param name="frame_id" value="map"/>
+      <param name="child_frame_id" value="camera_odom_frame"/>
+    </node>
 
-  <!-- launch RVIZ node-->
-  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
+    <!-- launch RVIZ node-->
+    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
+  </group>
+
+  <!-- For "offline" mapping (from a rosbag) -->
+  <group if="$(arg offline)">
+    <!-- launch Octomap via radar_mapping.launch -->
+    <include file="$(find radar_rig)/launch/radar_mapping.launch"/>
+
+    <!-- launch RVIZ node-->
+    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
+  </group>
 
 </launch>

@@ -7,6 +7,8 @@
     /tf_static
     /scan
     /mmWaveDataHdl/RScan
+    /mmWaveDataHdl/RScanInliers
+    /mmWaveDataHdl/velocity
     /imu/data_raw
     /camera/accel/sample
     /camera/gyro/sample
