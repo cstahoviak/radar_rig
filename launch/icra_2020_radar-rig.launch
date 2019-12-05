@@ -1,7 +1,7 @@
 <!--
   ICRA 2020 top level launch file
 
-  Launshes:
+  Launches:
     - 1x 1843 radar board
     - 1x LORD microstrain IMU
     - 1x Intel RealSense d435 (or the t265)
