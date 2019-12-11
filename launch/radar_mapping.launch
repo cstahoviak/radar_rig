@@ -7,51 +7,62 @@
   <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_map_to_odom" args="0 0 0 0 0 0 map odom"/> -->
 
   <!-- Add nodes to filter/limit Radar data before using it for mapping -->
-  <include file="$(find radar_rig)/launch/radar_limit_filters.launch">
-  </include>
+  <include file="$(find radar_rig)/launch/radar_limit_filters.launch"/>
 
-  <!-- Create "raw" 3D map using first octomap node -->
-  <node pkg="octomap_server" type="octomap_server_node" name="octomap_raw" output="screen">
-    <remap from="octomap_point_cloud_centers" to="raw_point_cloud_centers"/>
-    <remap from="projected_map" to="raw_map"/>
-    <remap from="cloud_in" to="rzi_filt_out"/>
+  <!-- <group ns="octomap_raw"> -->
+    <!-- Create "raw" 3D map using first octomap node -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_raw" output="screen">
+      <remap from="cloud_in" to="rzi_filt_out"/>
+      <remap from="octomap_point_cloud_centers" to="raw/point_cloud_centers"/>
+      <remap from="occupied_cells_vis_array" to="raw/occupied_cells_vis_array"/>
+      <remap from="free_cells_vis_array" to="raw/free_cells_vis_array"/>
+      <remap from="projected_map" to="raw/map"/>
+      <remap from="octomap_binary" to="raw/octomap_binary"/>
+      <remap from="octomap_full" to="raw/octomap_full"/>
 
-    <param name="resolution" value="0.05"/>
-    <param name="frame_id" value="map"/>
-    <param name="base_frame_id" value="camera_odom_frame"/>
-    <param name="sensor_model/hit" value="0.7"/>
-    <param name="sensor_model/miss" value="0.4"/>
-    <param name="ground_filter/distance" value="1.0"/>
-  </node>
+      <param name="resolution" value="0.10"/>
+      <param name="frame_id" value="map"/>
+      <param name="base_frame_id" value="camera_odom_frame"/>
+      <param name="sensor_model/hit" value="0.7"/>
+      <param name="sensor_model/miss" value="0.4"/>
+      <param name="ground_filter/distance" value="1.0"/>
+    </node>
+  <!-- </group> -->
 
   <!-- Perform SOR filtering on output from "raw" octomap node -->
   <node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
-    <remap from="~input" to="raw_point_cloud_centers"/>
+    <remap from="~input" to="raw/point_cloud_centers"/>
     <remap from="~output" to="mapping_SOR_filter_out"/>
     <param name="mean_k" value="20"/>
     <param name="stddev" value="0.04"/>
   </node>
 
-  <!-- Perform SOR filtering on output from "raw" octomap node -->
+  <!-- Perform SOR filtering on output from pcl passthrough filters -->
   <!-- node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
-    <remap from="~input" to="xyzi_filt_out"/>
+    <remap from="~input" to="rzi_filt_out"/>
     <remap from="~output" to="mapping_SOR_filter_out"/>
     <param name="mean_k" value="20"/>
     <param name="stddev" value="0.04"/>
   </node -->
 
-  <!-- Create "filtered" 3D map using second octomap node -->
-  <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered" output="screen">
-    <remap from="octomap_point_cloud_centers" to="filtered_point_cloud_centers"/>
-    <remap from="projected_map" to="filtered_map"/>
-    <remap from="cloud_in" to="mapping_SOR_filter_out"/>
+  <!-- <group ns="octomap_filtered" -->
+    <!-- Create "filtered" 3D map using second octomap node -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered" output="screen">
+      <remap from="cloud_in" to="mapping_SOR_filter_out"/>
+      <remap from="octomap_point_cloud_centers" to="filtered/point_cloud_centers"/>
+      <remap from="occupied_cells_vis_array" to="filtered/occupied_cells_vis_array"/>
+      <remap from="free_cells_vis_array" to="filtered/free_cells_vis_array"/>
+      <remap from="projected_map" to="filtered/map"/>
+      <remap from="octomap_binary" to="filtered/octomap_binary"/>
+      <remap from="octomap_full" to="filtered/octomap_full"/>
 
-    <param name="resolution" value="0.05"/>
-    <param name="frame_id" value="map"/>
-    <param name="base_frame_id" value="camera_odom_frame"/>
-    <param name="sensor_model/hit" value="0.7"/>
-    <param name="sensor_model/miss" value="0.4"/>
-    <param name="ground_filter/distance" value="1.0"/>
-  </node>
+      <param name="resolution" value="0.10"/>
+      <param name="frame_id" value="map"/>
+      <param name="base_frame_id" value="camera_odom_frame"/>
+      <param name="sensor_model/hit" value="0.7"/>
+      <param name="sensor_model/miss" value="0.4"/>
+      <param name="ground_filter/distance" value="1.0"/>
+    </node>
+  <!-- </group> -->
 
 </launch>

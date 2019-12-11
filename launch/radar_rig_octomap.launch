@@ -6,7 +6,8 @@
 
   <arg name="offline" default="false" doc="mapping from an offline (rosbag) dataset or online (live) data?"/>
 
-  <arg name="goggles" default="true"/>
+  <arg name="goggles" default="false"/>
+  <arg name="radar"   default="true"/>
   <arg name="camera"  default="true"/>
   <arg name="lidar"   default="true"/>
   <arg name="imu"     default="true"/>
@@ -15,9 +16,15 @@
   <!-- Topic re-mapping -->
   <remap from="imu_raw" to="imu/data_raw"/>
 
+  <!-- Radar serial ports -->
+  <arg name="command_port" default="/dev/ttyACM0"/>
+  <arg name="data_port" default="/dev/ttyACM1"/>
+
   <!-- Goggles parameters -->
   <arg name="launch_radar" default="true" doc="launch radar in addition to velocity estimator?"/>
   <arg name="publish_inliers" default="true" doc="publish MLESAC inlier pointcloud?"/>
+  <arg name="radar_cfg" default="rngRes_0-04_velRes_0-15_rngMax_10-04_3d_10Hz" doc="1843 best range res"/>
+  <!-- arg name="radar_cfg" default="rangeRes_0-12_velRes_0-04_velMax_2-56_3d_10Hz" doc="1843 best Doppler res"/ -->
 
   <!-- For "online" mapping (not from a rosbag) -->
   <group unless="$(arg offline)">
@@ -25,7 +32,18 @@
     <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
       <arg name="launch_radar" value="$(arg launch_radar)"/>
       <arg name="publish_inliers" value="$(arg publish_inliers)"/>
-      <arg name="config" value="rngRes_0-04_velRes_0-15_rngMax_10-04_3d_10Hz"/>
+      <arg name="config" value="$(arg radar_cfg)"/>
+    </include>
+
+    <!-- launch AWR1843 radar -->
+    <include if="$(arg radar)" file="$(find ti_mmwave_rospkg)/launch/ti_mmwave_sensor.launch">
+      <arg name="device" value="1843" doc="TI mmWave sensor device type [1443, 1642, 1843]"/>
+      <arg name="config" value="$(arg radar_cfg)"/>
+      <arg name="sdk" value="03_02_00_04"/>
+      <arg name="max_allowed_elevation_angle_deg" value="90" doc="Maximum allowed elevation angle in degrees for detected object data [0 > value >= 90]}"/>
+      <arg name="max_allowed_azimuth_angle_deg" value="90" doc="Maximum allowed azimuth angle in degrees for detected object data [0 > value >= 90]}"/>
+      <arg name="command_port" default="$(arg command_port)"/>
+      <arg name="data_port" default="$(arg data_port)"/>
     </include>
 
     <!-- launch RealSense T265 camera node -->
@@ -43,33 +61,42 @@
       <arg name="port" value="/dev/serial/by-id/usb-Lord_Microstrain_Lord_Inertial_Sensor_0000__6254.75760-if00"/>
     </include>
 
-    <!-- launch Octomap via radar_mapping.launch -->
-    <include file="$(find radar_rig)/launch/radar_mapping.launch"/>
-
-    <!-- launch world2odom transform node -->
-    <node pkg="radar_rig" type="world2odom_tf.py" name="vrpn_pose_tf" output="screen">
+    <!-- launch world2odom transform node (Octomap requires tf from odom to map frame) -->
+    <!-- NOTE: this does NOT work. It effectively "doubles" the tf from camera_pose_frame to map -->
+    <!-- <node pkg="radar_rig" type="world2odom_tf.py" name="vrpn_pose_tf" output="screen">
       <param name="pose_topic" value="camera/odom/sample"/>
       <param name="frame_id" value="map"/>
       <param name="child_frame_id" value="camera_odom_frame"/>
-    </node>
+    </node> -->
 
-    <!-- launch RVIZ node-->
-    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
   </group>
 
-  <!-- For "offline" mapping (from a rosbag) -->
+  <!-- NOTE: for "offline" mapping, sensor data and world2odom_tf are recorded topics -->
   <group if="$(arg offline)">
-    <!-- launch Octomap via radar_mapping.launch -->
-    <include file="$(find radar_rig)/launch/radar_mapping.launch"/>
+    <!-- launch Goggles node -->
+    <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
+      <arg name="launch_radar" value="$(arg launch_radar)"/>
+      <arg name="publish_inliers" value="$(arg publish_inliers)"/>
+      <arg name="config" value="$(arg radar_cfg)"/>
+    </include>
 
-    <!-- launch RVIZ node-->
-    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
+    <!-- launch robot_localization -->
+
+    <!-- launch additional radar_mapping node that uses radar odometry (not T265) -->
+
   </group>
+
+  <!-- launch Octomap via radar_mapping.launch -->
+  <include file="$(find radar_rig)/launch/radar_mapping.launch"/>
 
   <!-- static transfrom from camera_pose_frame to additional sensor frames -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="odom_camera_tf" args="0 0 0 0 0 0 odom camera_odom_frame"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="map_odom_tf" args="0 0 0 0 0 0 map camera_odom_frame"/>
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="odom_camera_tf" args="0 0 0 0 0 0 odom camera_odom_frame"/> -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="camera_radar_tf" args="0 0 -0.040 0 0 0 camera_pose_frame base_radar_link"/>
   <node if="$(arg lidar)" pkg="tf2_ros" type="static_transform_publisher" name="camera_lidar_tf" args="-0.110 0 0.040 0 0 0 camera_pose_frame laser"/>
   <node if="$(arg imu)" pkg="tf2_ros" type="static_transform_publisher" name="camera_imu_tf" args="-0.065 0 -0.010 0 0 0 camera_pose_frame 3dm_gx5_15"/>
+
+  <!-- launch RVIZ node-->
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
 
 </launch>

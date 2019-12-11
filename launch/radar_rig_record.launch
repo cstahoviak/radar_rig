@@ -1,10 +1,9 @@
 <launch>
   <arg name="name" doc="specify the name of the bagfile to be saved"/>
-  <arg name="full" default="true" doc="collect data on ALL sensors (RLVI)"/>
-  <arg name="light" default="false" doc="do NOT record T265 image topics"/>
+  <arg name="light" default="false" doc="false: collect data on ALL sensors (RLVI), true: do NOT record T265 image topics"/>
 
-  <node if="$(arg full)" pkg="rosbag" type="record" name="record_sensors"
-    args="record -O /home/carl/Data/rss_2020/radar-rig/obstacle_detect/11-25-2019/$(arg name)
+  <node unless="$(arg light)" pkg="rosbag" type="record" name="radar_rig_record"
+    args="record -O /home/carl/Data/rss_2020/radar-rig/octomap/2019-12-10/$(arg name)
     /tf
     /tf_static
     /scan
@@ -20,8 +19,8 @@
     /vrpn_client_node/RadarRig/pose
     /vrpn_client_node/RadarRig/twist"/>
 
-  <node if="$(arg light)" pkg="rosbag" type="record" name="record_sensors"
-    args="record -O /home/carl/Data/rss_2020/radar-rig/obstacle_detect/11-25-2019/$(arg name)
+  <node if="$(arg light)" pkg="rosbag" type="record" name="radar_rig_record"
+    args="record -O /home/carl/Data/rss_2020/radar-rig/octomap/2019-12-10/$(arg name)
     /tf
     /tf_static
     /scan
@@ -33,6 +32,9 @@
     /camera/gyro/sample
     /camera/odom/sample
     /vrpn_client_node/RadarRig/pose
-    /vrpn_client_node/RadarRig/twist"/>
+    /vrpn_client_node/RadarRig/twist
+    /filtered/occupied_cells_vis_array
+    /filtered/point_cloud_centers
+    /filtered/octomap_full"/>
 
 </launch>
