@@ -1,0 +1,163 @@
+<!--
+  Launch file to perform mapping using octomap with the radar
+ -->
+<launch>
+
+  <!-- Add nodes to filter/limit Radar data before using it for mapping -->
+  <include file="$(find radar_rig)/launch/radar_limit_filters.launch"/>
+
+  <!-- define standard Octomap parameters -->
+  <arg name="resolution"    default="0.20"/>
+  <arg name="frame_id"      default="map"/>
+  <arg name="base_frame_id" default="camera_odom_frame"/>
+  <arg name="hit"           default="0.8"/>
+  <arg name="miss"          default="0.45"/>
+  <arg name="distance"      default="1.0"/>
+
+  <!-- Statistical Outlier Removal (SOR) Filter params -->
+  <arg name="mean_k" default="20"/>
+  <arg name="stddev" default="0.04"/>
+
+  <!-- Radius Outlier Removal (ROR) Filter params -->
+  <arg name="min_neighbors" default="3"/>
+  <arg name="radius_search" default="0.20"/>
+
+  <!-- Create "raw" 3D map using first octomap node -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_raw" output="screen">
+    <remap from="cloud_in" to="rzi_filt_out"/>
+    <remap from="octomap_point_cloud_centers" to="raw/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="raw/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="raw/free_cells_vis_array"/>
+    <remap from="projected_map" to="raw/map"/>
+    <remap from="octomap_binary" to="raw/octomap_binary"/>
+    <remap from="octomap_full" to="raw/octomap_full"/>
+
+    <param name="resolution" value="$(arg resolution)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="sensor_model/hit" value="$(arg hit)"/>
+    <param name="sensor_model/miss" value="$(arg miss)"/>
+    <param name="ground_filter/distance" value="$(arg distance)"/>
+  </node>
+
+  <!-- ********************************************************************* -->
+  <!--
+  Launch PCL Outlier Removal Filters >
+      1. Statistical Outlier Removel Filter, SOR
+         a. raw/point_cloud_centers
+         b. rzi_filt_out
+      2. Radius Outlier Removel Filter, ROR
+         a. raw/point_cloud_centers
+         b. rzi_filt_out
+  -->
+
+  <!-- Perform SOR filtering on output from "raw" octomap node -->
+  <node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
+    <remap from="~input" to="raw/point_cloud_centers"/>
+    <remap from="~output" to="mapping_SOR_filter_out"/>
+    <param name="mean_k" value="$(arg mean_k)"/>
+    <param name="stddev" value="$(arg stddev)"/>
+  </node>
+
+  <!-- Perform SOR filtering on output from pcl passthrough filters -->
+  <node pkg="nodelet" type="nodelet" name="rzi_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
+    <remap from="~input" to="rzi_filt_out"/>
+    <remap from="~output" to="rzi_SOR_filter_out"/>
+    <param name="mean_k" value="$(arg mean_k)"/>
+    <param name="stddev" value="$(arg stddev)"/>
+  </node>
+
+   <!-- Perform ROR filtering on output from "raw" octomap node -->
+  <node pkg="nodelet" type="nodelet" name="mapping_ROR_filt_mapping" args="standalone pcl/RadiusOutlierRemoval" output="screen">
+    <remap from="~input" to="raw/point_cloud_centers"/>
+    <remap from="~output" to="mapping_ROR_filter_out"/>
+    <param name="min_neighbors" value="$(arg min_neighbors)"/>
+    <param name="radius_search" value="$(arg radius_search)"/>
+  </node>
+
+  <!-- Perform ROR filtering on output from pcl passthrough filters -->
+  <node pkg="nodelet" type="nodelet" name="rzi_ROR_filt_mapping" args="standalone pcl/RadiusOutlierRemoval" output="screen">
+    <remap from="~input" to="rzi_filt_out"/>
+    <remap from="~output" to="rzi_ROR_filter_out"/>
+    <param name="min_neighbors" value="$(arg min_neighbors)"/>
+    <param name="radius_search" value="$(arg radius_search)"/>
+  </node>
+  <!-- ********************************************************************* -->
+
+  <!-- STATISTICAL OUTLIER REMOVAL FILTERING ******************************* -->
+  <!-- Create "filtered" 3D map from SOR filtered "raw" pcl centers -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered_SOR" output="screen">
+    <remap from="cloud_in" to="mapping_SOR_filter_out"/>
+    <remap from="octomap_point_cloud_centers" to="filtered/SOR/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="filtered/SOR/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="filtered/SOR/free_cells_vis_array"/>
+    <remap from="projected_map" to="filtered/SOR/map"/>
+    <remap from="octomap_binary" to="filtered/SOR/octomap_binary"/>
+    <remap from="octomap_full" to="filtered/SOR/octomap_full"/>
+
+    <param name="resolution" value="$(arg resolution)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="sensor_model/hit" value="$(arg hit)"/>
+    <param name="sensor_model/miss" value="$(arg miss)"/>
+    <param name="ground_filter/distance" value="$(arg distance)"/>
+  </node>
+
+  <!-- Create "filtered" 3D map from SOR filtered rzi passthrough-filtered pcl-->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_SOR" output="screen">
+    <remap from="cloud_in" to="rzi_SOR_filter_out"/>
+    <remap from="octomap_point_cloud_centers" to="SOR/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="SOR/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="SOR/free_cells_vis_array"/>
+    <remap from="projected_map" to="SOR/map"/>
+    <remap from="octomap_binary" to="SOR/octomap_binary"/>
+    <remap from="octomap_full" to="SOR/octomap_full"/>
+
+    <param name="resolution" value="$(arg resolution)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="sensor_model/hit" value="$(arg hit)"/>
+    <param name="sensor_model/miss" value="$(arg miss)"/>
+    <param name="ground_filter/distance" value="$(arg distance)"/>
+  </node>
+  <!-- STATISTICAL OUTLIER REMOVAL FILTERING ******************************* -->
+
+  <!-- RADIUS OUTLIER REMOVAL FILTERING ************************************ -->
+  <!-- Create "filtered" 3D map from ROR filtered "raw" pcl centers -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered_ROR" output="screen">
+    <remap from="cloud_in" to="mapping_ROR_filter_out"/>
+    <remap from="octomap_point_cloud_centers" to="filtered/ROR/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="filtered/ROR/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="filtered/ROR/free_cells_vis_array"/>
+    <remap from="projected_map" to="filtered/ROR/map"/>
+    <remap from="octomap_binary" to="filtered/ROR/octomap_binary"/>
+    <remap from="octomap_full" to="filtered/ROR/octomap_full"/>
+
+    <param name="resolution" value="$(arg resolution)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="sensor_model/hit" value="$(arg hit)"/>
+    <param name="sensor_model/miss" value="$(arg miss)"/>
+    <param name="ground_filter/distance" value="$(arg distance)"/>
+  </node>
+
+  <!-- Create "filtered" 3D map from ROR filtered rzi passthrough-filtered pcl -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_ROR" output="screen">
+    <remap from="cloud_in" to="rzi_ROR_filter_out"/>
+    <remap from="octomap_point_cloud_centers" to="ROR/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="ROR/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="ROR/free_cells_vis_array"/>
+    <remap from="projected_map" to="ROR/map"/>
+    <remap from="octomap_binary" to="ROR/octomap_binary"/>
+    <remap from="octomap_full" to="ROR/octomap_full"/>
+
+    <param name="resolution" value="$(arg resolution)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+    <param name="sensor_model/hit" value="$(arg hit)"/>
+    <param name="sensor_model/miss" value="$(arg miss)"/>
+    <param name="ground_filter/distance" value="$(arg distance)"/>
+  </node>
+  <!-- RADIUS OUTLIER REMOVAL FILTERING ************************************ -->
+
+</launch>

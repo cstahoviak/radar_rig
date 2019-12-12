@@ -46,7 +46,7 @@
       <rosparam>
          filter_field_name: z
          filter_limit_min: -0.5
-         filter_limit_max: 2.0
+         filter_limit_max: 0.5
          filter_limit_negative: False
       </rosparam>
    </node>
@@ -56,7 +56,7 @@
       <remap from="~output" to="rzi_filt_out"/>
       <rosparam>
          filter_field_name: intensity
-         filter_limit_min: 5
+         filter_limit_min: 10
          filter_limit_max: 100
          filter_limit_negative: False
       </rosparam>

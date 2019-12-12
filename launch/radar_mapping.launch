@@ -20,11 +20,11 @@
       <remap from="octomap_binary" to="raw/octomap_binary"/>
       <remap from="octomap_full" to="raw/octomap_full"/>
 
-      <param name="resolution" value="0.10"/>
+      <param name="resolution" value="0.20"/>
       <param name="frame_id" value="map"/>
       <param name="base_frame_id" value="camera_odom_frame"/>
-      <param name="sensor_model/hit" value="0.7"/>
-      <param name="sensor_model/miss" value="0.4"/>
+      <param name="sensor_model/hit" value="0.8"/>
+      <param name="sensor_model/miss" value="0.45"/>
       <param name="ground_filter/distance" value="1.0"/>
     </node>
   <!-- </group> -->
@@ -33,17 +33,9 @@
   <node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
     <remap from="~input" to="raw/point_cloud_centers"/>
     <remap from="~output" to="mapping_SOR_filter_out"/>
-    <param name="mean_k" value="20"/>
-    <param name="stddev" value="0.04"/>
+    <param name="mean_k" value="0.5"/>
+    <param name="stddev" value="0.10"/>
   </node>
-
-  <!-- Perform SOR filtering on output from pcl passthrough filters -->
-  <!-- node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
-    <remap from="~input" to="rzi_filt_out"/>
-    <remap from="~output" to="mapping_SOR_filter_out"/>
-    <param name="mean_k" value="20"/>
-    <param name="stddev" value="0.04"/>
-  </node -->
 
   <!-- <group ns="octomap_filtered" -->
     <!-- Create "filtered" 3D map using second octomap node -->
@@ -56,11 +48,11 @@
       <remap from="octomap_binary" to="filtered/octomap_binary"/>
       <remap from="octomap_full" to="filtered/octomap_full"/>
 
-      <param name="resolution" value="0.10"/>
+      <param name="resolution" value="0.20"/>
       <param name="frame_id" value="map"/>
       <param name="base_frame_id" value="camera_odom_frame"/>
-      <param name="sensor_model/hit" value="0.7"/>
-      <param name="sensor_model/miss" value="0.4"/>
+      <param name="sensor_model/hit" value="0.8"/>
+      <param name="sensor_model/miss" value="0.45"/>
       <param name="ground_filter/distance" value="1.0"/>
     </node>
   <!-- </group> -->
