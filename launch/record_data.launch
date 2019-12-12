@@ -3,7 +3,7 @@
   <arg name="light" default="false" doc="false: collect data on ALL sensors (RLVI), true: do NOT record T265 image topics"/>
 
   <node unless="$(arg light)" pkg="rosbag" type="record" name="radar_rig_record"
-    args="record -O /home/carl/Data/rss_2020/radar-rig/octomap/2019-12-10/$(arg name)
+    args="record -O /home/carl/Data/rss_2020/radar-rig/octomap/2019-12-11/$(arg name)
     /tf
     /tf_static
     /scan
@@ -20,7 +20,7 @@
     /vrpn_client_node/RadarRig/twist"/>
 
   <node if="$(arg light)" pkg="rosbag" type="record" name="radar_rig_record"
-    args="record -O /home/carl/Data/rss_2020/radar-rig/octomap/2019-12-10/$(arg name)
+    args="record -O /home/carl/Data/rss_2020/radar-rig/octomap/2019-12-11/$(arg name)
     /tf
     /tf_static
     /scan
