@@ -5,6 +5,7 @@
 <launch>
 
   <arg name="offline" default="false" doc="mapping from an offline (rosbag) dataset or online (live) data?"/>
+  <arg name="eval" default="true" doc="launch radar_mapping_eval.launch with multiple octomap servers"/>
 
   <arg name="goggles" default="false"/>
   <arg name="radar"   default="true"/>
@@ -13,7 +14,7 @@
   <arg name="imu"     default="true"/>
   <arg name="rviz"    default="true"/>
 
-  <!-- Radar serial ports -->
+  <!-- Radar serial ports (for online mapping)-->
   <arg name="command_port" default="/dev/ttyACM0"/>
   <arg name="data_port" default="/dev/ttyACM1"/>
 
@@ -25,7 +26,6 @@
 
   <!-- For "online" mapping (not from a rosbag) -->
   <group unless="$(arg offline)">
-
     <!-- launch all sensors -->
     <include file="$(find radar_rig)/launch/singleradar.launch">
       <arg name="radar"  value="$(arg radar)"/>
@@ -54,7 +54,6 @@
       <param name="frame_id" value="map"/>
       <param name="child_frame_id" value="camera_odom_frame"/>
     </node> -->
-
   </group>
 
   <!-- NOTE: for "offline" mapping, sensor data and world2odom_tf are recorded topics -->
@@ -63,7 +62,6 @@
     <include if="$(arg goggles)" file="$(find goggles)/launch/goggles.launch">
       <arg name="launch_radar" value="$(arg launch_radar)"/>
       <arg name="publish_inliers" value="$(arg publish_inliers)"/>
-      <arg name="config" value="$(arg radar_cfg)"/>
     </include>
 
     <!-- launch robot_localization -->
@@ -79,11 +77,20 @@
   <node if="$(arg imu)" pkg="tf2_ros" type="static_transform_publisher" name="camera_imu_tf" args="-0.065 0 -0.010 0 0 0 camera_pose_frame 3dm_gx5_15"/>
 
   <!-- launch Octomap via radar_mapping.launch -->
-  <!-- <include file="$(find radar_rig)/launch/radar_mapping.launch"/> -->
-  <include file="$(find radar_rig)/launch/radar_mapping_eval.launch"/>
+  <include unless="$(arg eval)" file="$(find radar_rig)/launch/radar_mapping.launch">
+     <arg name="pcl_limit_filter_topic" value="mmWaveDataHdl/RScan"/>
+  </include>
 
-  <!-- launch RVIZ node-->
-  <!-- <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/> -->
-  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap_eval.rviz"/>
+  <!-- launch Octomap via radar_mapping_eval.launch -->
+  <include if="$(arg eval)" file="$(find radar_rig)/launch/radar_mapping_eval.launch">
+     <arg name="pcl_limit_filter_topic" value="mmWaveDataHdl/RScan"/>
+     <!-- <arg name="pcl_limit_filter_topic" value="mmWaveDataHdl/inlier_set"/> -->
+ </include>
+
+  <!-- launch RVIZ node (don't know how to combine multiple logical checks..)-->
+  <group if="$(arg rviz)">
+    <node unless="$(arg eval)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
+    <node if="$(arg eval)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap_eval.rviz"/>
+  </group>
 
 </launch>

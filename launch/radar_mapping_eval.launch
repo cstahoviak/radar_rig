@@ -3,27 +3,28 @@
  -->
 <launch>
 
-  <!-- Add nodes to filter/limit Radar data before using it for mapping -->
-  <include file="$(find radar_rig)/launch/radar_limit_filters.launch"/>
-
-  <!-- define standard Octomap parameters -->
-  <arg name="resolution"    default="0.20"/>
-  <arg name="frame_id"      default="map"/>
-  <arg name="base_frame_id" default="camera_odom_frame"/>
-  <arg name="hit"           default="0.8"/>
-  <arg name="miss"          default="0.45"/>
-  <arg name="distance"      default="1.0"/>
+  <!-- using best_range_res or best_doppler_res radar config? -->
+  <arg name="rng_res" default="false" doc="true: best_range_res cfg; false: best_doppler_res cfg"/>
 
   <!-- Statistical Outlier Removal (SOR) Filter params -->
   <arg name="mean_k" default="20"/>
   <arg name="stddev" default="0.04"/>
 
   <!-- Radius Outlier Removal (ROR) Filter params -->
-  <arg name="min_neighbors" default="3"/>
+  <arg name="min_neighbors" default="5"/>
   <arg name="radius_search" default="0.20"/>
+
+  <arg name="pcl_limit_filter_topic" default="mmWaveDataHdl/RScan"/>
+
+  <!-- Add nodes to filter/limit Radar data before using it for mapping -->
+  <include file="$(find radar_rig)/launch/radar_limit_filters.launch">
+     <arg name="radar_pcl" value="$(arg pcl_limit_filter_topic)"/>
+  </include>
 
   <!-- Create "raw" 3D map using first octomap node -->
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_raw" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap.yaml"/>
+
     <remap from="cloud_in" to="rzi_filt_out"/>
     <remap from="octomap_point_cloud_centers" to="raw/point_cloud_centers"/>
     <remap from="occupied_cells_vis_array" to="raw/occupied_cells_vis_array"/>
@@ -31,13 +32,6 @@
     <remap from="projected_map" to="raw/map"/>
     <remap from="octomap_binary" to="raw/octomap_binary"/>
     <remap from="octomap_full" to="raw/octomap_full"/>
-
-    <param name="resolution" value="$(arg resolution)"/>
-    <param name="frame_id" value="$(arg frame_id)"/>
-    <param name="base_frame_id" value="$(arg base_frame_id)"/>
-    <param name="sensor_model/hit" value="$(arg hit)"/>
-    <param name="sensor_model/miss" value="$(arg miss)"/>
-    <param name="ground_filter/distance" value="$(arg distance)"/>
   </node>
 
   <!-- ********************************************************************* -->
@@ -55,38 +49,48 @@
   <node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
     <remap from="~input" to="raw/point_cloud_centers"/>
     <remap from="~output" to="mapping_SOR_filter_out"/>
-    <param name="mean_k" value="$(arg mean_k)"/>
-    <param name="stddev" value="$(arg stddev)"/>
+    <param name="mean_k" value="20"/>
+    <param name="stddev" value="0.04"/>
   </node>
 
   <!-- Perform SOR filtering on output from pcl passthrough filters -->
   <node pkg="nodelet" type="nodelet" name="rzi_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
     <remap from="~input" to="rzi_filt_out"/>
     <remap from="~output" to="rzi_SOR_filter_out"/>
-    <param name="mean_k" value="$(arg mean_k)"/>
-    <param name="stddev" value="$(arg stddev)"/>
+    <!-- best_range_res param values -->
+    <param if="$(arg rng_res)" name="mean_k" value="20"/>
+    <param if="$(arg rng_res)" name="stddev" value="0.04"/>
+    <!-- best_doppler_res param values -->
+    <param unless="$(arg rng_res)" name="mean_k" value="20"/>
+    <param unless="$(arg rng_res)" name="stddev" value="0.04"/>
   </node>
 
    <!-- Perform ROR filtering on output from "raw" octomap node -->
   <node pkg="nodelet" type="nodelet" name="mapping_ROR_filt_mapping" args="standalone pcl/RadiusOutlierRemoval" output="screen">
     <remap from="~input" to="raw/point_cloud_centers"/>
     <remap from="~output" to="mapping_ROR_filter_out"/>
-    <param name="min_neighbors" value="$(arg min_neighbors)"/>
-    <param name="radius_search" value="$(arg radius_search)"/>
+    <param name="min_neighbors" value="3"/>
+    <param name="radius_search" value="0.25"/>
   </node>
 
   <!-- Perform ROR filtering on output from pcl passthrough filters -->
   <node pkg="nodelet" type="nodelet" name="rzi_ROR_filt_mapping" args="standalone pcl/RadiusOutlierRemoval" output="screen">
     <remap from="~input" to="rzi_filt_out"/>
     <remap from="~output" to="rzi_ROR_filter_out"/>
-    <param name="min_neighbors" value="$(arg min_neighbors)"/>
-    <param name="radius_search" value="$(arg radius_search)"/>
+    <!-- best_range_res param values -->
+    <param if="$(arg rng_res)" name="min_neighbors" value="4"/>
+    <param if="$(arg rng_res)" name="radius_search" value="0.15"/>
+    <!-- best_doppler_res param values -->
+    <param unless="$(arg rng_res)" name="min_neighbors" value="4"/>
+    <param unless="$(arg rng_res)" name="radius_search" value="0.15"/>
   </node>
   <!-- ********************************************************************* -->
 
   <!-- STATISTICAL OUTLIER REMOVAL FILTERING ******************************* -->
   <!-- Create "filtered" 3D map from SOR filtered "raw" pcl centers -->
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered_SOR" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap.yaml"/>
+
     <remap from="cloud_in" to="mapping_SOR_filter_out"/>
     <remap from="octomap_point_cloud_centers" to="filtered/SOR/point_cloud_centers"/>
     <remap from="occupied_cells_vis_array" to="filtered/SOR/occupied_cells_vis_array"/>
@@ -94,17 +98,12 @@
     <remap from="projected_map" to="filtered/SOR/map"/>
     <remap from="octomap_binary" to="filtered/SOR/octomap_binary"/>
     <remap from="octomap_full" to="filtered/SOR/octomap_full"/>
-
-    <param name="resolution" value="$(arg resolution)"/>
-    <param name="frame_id" value="$(arg frame_id)"/>
-    <param name="base_frame_id" value="$(arg base_frame_id)"/>
-    <param name="sensor_model/hit" value="$(arg hit)"/>
-    <param name="sensor_model/miss" value="$(arg miss)"/>
-    <param name="ground_filter/distance" value="$(arg distance)"/>
   </node>
 
   <!-- Create "filtered" 3D map from SOR filtered rzi passthrough-filtered pcl-->
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_SOR" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap.yaml"/>
+
     <remap from="cloud_in" to="rzi_SOR_filter_out"/>
     <remap from="octomap_point_cloud_centers" to="SOR/point_cloud_centers"/>
     <remap from="occupied_cells_vis_array" to="SOR/occupied_cells_vis_array"/>
@@ -112,19 +111,14 @@
     <remap from="projected_map" to="SOR/map"/>
     <remap from="octomap_binary" to="SOR/octomap_binary"/>
     <remap from="octomap_full" to="SOR/octomap_full"/>
-
-    <param name="resolution" value="$(arg resolution)"/>
-    <param name="frame_id" value="$(arg frame_id)"/>
-    <param name="base_frame_id" value="$(arg base_frame_id)"/>
-    <param name="sensor_model/hit" value="$(arg hit)"/>
-    <param name="sensor_model/miss" value="$(arg miss)"/>
-    <param name="ground_filter/distance" value="$(arg distance)"/>
   </node>
   <!-- STATISTICAL OUTLIER REMOVAL FILTERING ******************************* -->
 
   <!-- RADIUS OUTLIER REMOVAL FILTERING ************************************ -->
   <!-- Create "filtered" 3D map from ROR filtered "raw" pcl centers -->
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered_ROR" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap.yaml"/>
+
     <remap from="cloud_in" to="mapping_ROR_filter_out"/>
     <remap from="octomap_point_cloud_centers" to="filtered/ROR/point_cloud_centers"/>
     <remap from="occupied_cells_vis_array" to="filtered/ROR/occupied_cells_vis_array"/>
@@ -132,17 +126,12 @@
     <remap from="projected_map" to="filtered/ROR/map"/>
     <remap from="octomap_binary" to="filtered/ROR/octomap_binary"/>
     <remap from="octomap_full" to="filtered/ROR/octomap_full"/>
-
-    <param name="resolution" value="$(arg resolution)"/>
-    <param name="frame_id" value="$(arg frame_id)"/>
-    <param name="base_frame_id" value="$(arg base_frame_id)"/>
-    <param name="sensor_model/hit" value="$(arg hit)"/>
-    <param name="sensor_model/miss" value="$(arg miss)"/>
-    <param name="ground_filter/distance" value="$(arg distance)"/>
   </node>
 
   <!-- Create "filtered" 3D map from ROR filtered rzi passthrough-filtered pcl -->
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_ROR" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap.yaml"/>
+
     <remap from="cloud_in" to="rzi_ROR_filter_out"/>
     <remap from="octomap_point_cloud_centers" to="ROR/point_cloud_centers"/>
     <remap from="occupied_cells_vis_array" to="ROR/occupied_cells_vis_array"/>
@@ -150,14 +139,35 @@
     <remap from="projected_map" to="ROR/map"/>
     <remap from="octomap_binary" to="ROR/octomap_binary"/>
     <remap from="octomap_full" to="ROR/octomap_full"/>
-
-    <param name="resolution" value="$(arg resolution)"/>
-    <param name="frame_id" value="$(arg frame_id)"/>
-    <param name="base_frame_id" value="$(arg base_frame_id)"/>
-    <param name="sensor_model/hit" value="$(arg hit)"/>
-    <param name="sensor_model/miss" value="$(arg miss)"/>
-    <param name="ground_filter/distance" value="$(arg distance)"/>
   </node>
   <!-- RADIUS OUTLIER REMOVAL FILTERING ************************************ -->
+
+  <!-- USE ANDREW'S RADAR SENSOR MODEL ************************************* -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_ajk" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap_kramer.yaml"/>
+
+    <remap from="cloud_in" to="mmWaveDataHdl/RScan"/>
+    <remap from="octomap_point_cloud_centers" to="ajk/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="ajk/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="ajk/free_cells_vis_array"/>
+    <remap from="projected_map" to="ajk/map"/>
+    <remap from="octomap_binary" to="ajk/octomap_binary"/>
+    <remap from="octomap_full" to="ajk/octomap_full"/>
+  </node>
+
+  <!-- <node pkg="octomap_server" type="octomap_server_node" name="octomap_rdr_ror" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap_kramer.yaml"/>
+    <param name="filter_speckle" value="false"/>
+
+    <remap from="cloud_in" to="rzi_ROR_filter_out"/>
+    <remap from="octomap_point_cloud_centers" to="rdr_ror/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="rdr_ror/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="rdr_ror/free_cells_vis_array"/>
+    <remap from="projected_map" to="rdr_ror/map"/>
+    <remap from="octomap_binary" to="rdr_ror/octomap_binary"/>
+    <remap from="octomap_full" to="rdr_ror/octomap_full"/>
+  </node> -->
+
+  <!-- USE ANDREW'S RADAR SENSOR MODEL ************************************* -->
 
 </launch>

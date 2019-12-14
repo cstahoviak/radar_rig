@@ -1,0 +1,26 @@
+# Resolution in meter for the map when starting with an empty map
+resolution: 0.20
+# Static global frame in which the map will be published
+frame_id: map
+# The robot's base frame in which ground plane detection is performed (if enabled)
+base_frame_id: map
+# Probabilities for hits and misses in the sensor model when dynamically building a map
+sensor_model/hit: 0.90
+sensor_model/miss: 0.46
+# Minimum and maximum probability for clamping when dynamically building a map
+sensor_model/min: 0.22
+sensor_model/max: 0.97
+# Distance threshold for points (in z direction) to be segmented to the ground plane
+# ground_filter/distance: 0.05
+
+# Additional params for Andrew's sensor model/ speckle filter updates
+local_mapping: false
+use_beam_model: false
+sensor_model/azimuth_fov: 1.047
+sensor_model/elevation_fov: 0.393
+sensor_model/min_range: 1.0
+sensor_model/max_range: 5.0
+pointcloud_min_z: -1.0
+pointcloud_max_z: 1.0
+filter_speckle: true
+use_sor_filter: false
