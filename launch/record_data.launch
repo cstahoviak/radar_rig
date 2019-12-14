@@ -32,9 +32,6 @@
     /camera/gyro/sample
     /camera/odom/sample
     /vrpn_client_node/RadarRig/pose
-    /vrpn_client_node/RadarRig/twist
-    /filtered/occupied_cells_vis_array
-    /filtered/point_cloud_centers
-    /filtered/octomap_full"/>
+    /vrpn_client_node/RadarRig/twist"/>
 
 </launch>
