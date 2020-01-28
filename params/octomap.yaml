@@ -1,4 +1,4 @@
-# Resolution in meter for the map when starting with an empty map
+# Resolution in meters for the map when starting with an empty map
 resolution: 0.20
 # Static global frame in which the map will be published
 frame_id: map

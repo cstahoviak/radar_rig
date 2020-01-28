@@ -1,4 +1,5 @@
 <launch>
+   
   <arg name="name" doc="specify the name of the bagfile to be saved"/>
   <arg name="light" default="false" doc="false: collect data on ALL sensors (RLVI), true: do NOT record T265 image topics"/>
 

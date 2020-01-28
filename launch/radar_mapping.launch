@@ -3,58 +3,39 @@
  -->
 <launch>
 
-  <!-- Publish static transform from map to odom for mapping using only odometry info -->
-  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_map_to_odom" args="0 0 0 0 0 0 map odom"/> -->
+  <!-- using best_range_res or best_doppler_res radar config? -->
+  <arg name="rng_res" default="false" doc="true: best_range_res cfg; false: best_doppler_res cfg"/>
+
+  <arg name="pcl_limit_filter_topic" default="mmWaveDataHdl/RScan"/>
 
   <!-- Add nodes to filter/limit Radar data before using it for mapping -->
-  <include file="$(find radar_rig)/launch/radar_limit_filters.launch"/>
+  <include file="$(find radar_rig)/launch/radar_limit_filters.launch">
+     <arg name="radar_pcl" value="$(arg pcl_limit_filter_topic)"/>
+  </include>
 
-  <!-- <group ns="octomap_raw"> -->
-    <!-- Create "raw" 3D map using first octomap node -->
-    <node pkg="octomap_server" type="octomap_server_node" name="octomap_raw" output="screen">
-      <remap from="cloud_in" to="rzi_filt_out"/>
-      <remap from="octomap_point_cloud_centers" to="raw/point_cloud_centers"/>
-      <remap from="occupied_cells_vis_array" to="raw/occupied_cells_vis_array"/>
-      <remap from="free_cells_vis_array" to="raw/free_cells_vis_array"/>
-      <remap from="projected_map" to="raw/map"/>
-      <remap from="octomap_binary" to="raw/octomap_binary"/>
-      <remap from="octomap_full" to="raw/octomap_full"/>
-
-      <param name="resolution" value="0.20"/>
-      <param name="frame_id" value="map"/>
-      <param name="base_frame_id" value="camera_odom_frame"/>
-      <param name="sensor_model/hit" value="0.8"/>
-      <param name="sensor_model/miss" value="0.45"/>
-      <param name="ground_filter/distance" value="1.0"/>
-    </node>
-  <!-- </group> -->
-
-  <!-- Perform SOR filtering on output from "raw" octomap node -->
-  <node pkg="nodelet" type="nodelet" name="mapping_SOR_filt_mapping" args="standalone pcl/StatisticalOutlierRemoval" output="screen">
-    <remap from="~input" to="raw/point_cloud_centers"/>
-    <remap from="~output" to="mapping_SOR_filter_out"/>
-    <param name="mean_k" value="0.5"/>
-    <param name="stddev" value="0.10"/>
+  <!-- Perform ROR filtering on output from pcl passthrough filters -->
+  <node pkg="nodelet" type="nodelet" name="rzi_ROR_filt_mapping" args="standalone pcl/RadiusOutlierRemoval" output="screen">
+    <remap from="~input" to="rzi_filt_out"/>
+    <remap from="~output" to="rzi_ROR_filter_out"/>
+    <!-- best_range_res param values -->
+    <param if="$(arg rng_res)" name="min_neighbors" value="4"/>
+    <param if="$(arg rng_res)" name="radius_search" value="0.10"/>
+    <!-- best_doppler_res param values -->
+    <param unless="$(arg rng_res)" name="min_neighbors" value="4"/>
+    <param unless="$(arg rng_res)" name="radius_search" value="0.15"/>
   </node>
 
-  <!-- <group ns="octomap_filtered" -->
-    <!-- Create "filtered" 3D map using second octomap node -->
-    <node pkg="octomap_server" type="octomap_server_node" name="octomap_filtered" output="screen">
-      <remap from="cloud_in" to="mapping_SOR_filter_out"/>
-      <remap from="octomap_point_cloud_centers" to="filtered/point_cloud_centers"/>
-      <remap from="occupied_cells_vis_array" to="filtered/occupied_cells_vis_array"/>
-      <remap from="free_cells_vis_array" to="filtered/free_cells_vis_array"/>
-      <remap from="projected_map" to="filtered/map"/>
-      <remap from="octomap_binary" to="filtered/octomap_binary"/>
-      <remap from="octomap_full" to="filtered/octomap_full"/>
+  <!-- Create "filtered" 3D map from ROR filtered rzi passthrough-filtered pcl -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_ROR" output="screen">
+    <rosparam command="load" file="$(find radar_rig)/params/octomap.yaml"/>
 
-      <param name="resolution" value="0.20"/>
-      <param name="frame_id" value="map"/>
-      <param name="base_frame_id" value="camera_odom_frame"/>
-      <param name="sensor_model/hit" value="0.8"/>
-      <param name="sensor_model/miss" value="0.45"/>
-      <param name="ground_filter/distance" value="1.0"/>
-    </node>
-  <!-- </group> -->
+    <remap from="cloud_in" to="rzi_ROR_filter_out"/>
+    <remap from="octomap_point_cloud_centers" to="radar/point_cloud_centers"/>
+    <remap from="occupied_cells_vis_array" to="radar/occupied_cells_vis_array"/>
+    <remap from="free_cells_vis_array" to="radar/free_cells_vis_array"/>
+    <remap from="projected_map" to="radar/map"/>
+    <remap from="octomap_binary" to="radar/octomap_binary"/>
+    <remap from="octomap_full" to="radar/octomap_full"/>
+  </node>
 
 </launch>

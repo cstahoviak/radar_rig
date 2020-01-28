@@ -1,0 +1,51 @@
+<launch>
+
+   <arg name="rng_res" default="false" doc="true: best_range_res cfg; false: best_doppler_res cfg"/>
+   <arg name="pcl_limit_filter_topic" default="mmWaveDataHdl/RScan"/>
+
+   <!-- Add nodes to filter/limit Radar data before using it for mapping -->
+   <include file="$(find radar_rig)/launch/radar_limit_filters.launch">
+      <arg name="radar_pcl" value="$(arg pcl_limit_filter_topic)"/>
+   </include>
+
+   <!-- Perform ROR filtering on output from pcl passthrough filters -->
+   <node pkg="nodelet" type="nodelet" name="rzi_ROR_filt_mapping" args="standalone pcl/RadiusOutlierRemoval" output="screen">
+     <remap from="~input" to="rzi_filt_out"/>
+     <remap from="~output" to="rzi_ROR_filter_out"/>
+     <!-- best_range_res param values -->
+     <param if="$(arg rng_res)" name="min_neighbors" value="4"/>
+     <param if="$(arg rng_res)" name="radius_search" value="0.15"/>
+     <!-- best_doppler_res param values -->
+     <param unless="$(arg rng_res)" name="min_neighbors" value="3"/>    <!-- [2, ] -->
+     <param unless="$(arg rng_res)" name="radius_search" value="0.3"/> <!-- [0.25, ]-->
+   </node>
+
+   <!-- USE ANDREW'S RADAR SENSOR MODEL ************************************* -->
+   <node pkg="octomap_server" type="octomap_server_node" name="octomap_ajk" output="screen">
+     <rosparam command="load" file="$(find radar_rig)/params/octomap_kramer.yaml"/>
+
+     <remap from="cloud_in" to="mmWaveDataHdl/RScan"/>
+     <remap from="octomap_point_cloud_centers" to="ajk/point_cloud_centers"/>
+     <remap from="occupied_cells_vis_array" to="ajk/occupied_cells_vis_array"/>
+     <remap from="free_cells_vis_array" to="ajk/free_cells_vis_array"/>
+     <remap from="projected_map" to="ajk/map"/>
+     <remap from="octomap_binary" to="ajk/octomap_binary"/>
+     <remap from="octomap_full" to="ajk/octomap_full"/>
+   </node>
+
+   <node pkg="octomap_server" type="octomap_server_node" name="octomap_rdr_ror" output="screen">
+     <rosparam command="load" file="$(find radar_rig)/params/octomap_kramer.yaml"/>
+     <param name="filter_speckle" value="false"/>
+
+     <remap from="cloud_in" to="rzi_ROR_filter_out"/>
+     <remap from="octomap_point_cloud_centers" to="rdr_ror/point_cloud_centers"/>
+     <remap from="occupied_cells_vis_array" to="rdr_ror/occupied_cells_vis_array"/>
+     <remap from="free_cells_vis_array" to="rdr_ror/free_cells_vis_array"/>
+     <remap from="projected_map" to="rdr_ror/map"/>
+     <remap from="octomap_binary" to="rdr_ror/octomap_binary"/>
+     <remap from="octomap_full" to="rdr_ror/octomap_full"/>
+   </node>
+
+   <!-- USE ANDREW'S RADAR SENSOR MODEL ************************************* -->
+
+</launch>

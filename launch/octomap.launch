@@ -5,7 +5,7 @@
 <launch>
 
   <arg name="offline" default="false" doc="mapping from an offline (rosbag) dataset or online (live) data?"/>
-  <arg name="eval" default="true" doc="launch radar_mapping_eval.launch with multiple octomap servers"/>
+  <arg name="eval" default="false" doc="launch radar_mapping_eval.launch with multiple octomap servers"/>
 
   <arg name="goggles" default="false"/>
   <arg name="radar"   default="true"/>
@@ -87,10 +87,17 @@
      <!-- <arg name="pcl_limit_filter_topic" value="mmWaveDataHdl/inlier_set"/> -->
  </include>
 
-  <!-- launch RVIZ node (don't know how to combine multiple logical checks..)-->
+ <!-- launch Octomap via radar_mapping_kramer.launch -->
+ <!-- <include file="$(find radar_rig)/launch/radar_mapping_kramer.launch">
+    <arg name="pcl_limit_filter_topic" value="mmWaveDataHdl/RScan"/>
+ </include> -->
+
+  <!-- launch RVIZ node (don't know how to combine multiple logical checks..) -->
   <group if="$(arg rviz)">
+    <!-- <node unless="$(arg eval)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap_default.rviz"/> -->
     <node unless="$(arg eval)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap.rviz"/>
-    <node if="$(arg eval)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap_eval.rviz"/>
+    <!-- <node if="$(arg eval)" pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap_eval.rviz"/> -->
+    <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find radar_rig)/rviz/radar_octomap_kramer.rviz"/> -->
   </group>
 
 </launch>
